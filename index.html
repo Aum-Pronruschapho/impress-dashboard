@@ -13,7 +13,6 @@
         .date-picker:focus { border-color: #2980b9; }
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #bdc3c7; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
         .room-type { font-size: 20px; font-weight: bold; margin: 0 0 10px 0; color: #2c3e50; }
         .price { font-size: 24px; font-weight: bold; color: #e74c3c; margin: 10px 0; }
         .available { font-size: 16px; font-weight: bold; padding: 5px 10px; border-radius: 6px; display: inline-block; }
@@ -21,7 +20,7 @@
         .status-orange { background-color: #fff3e0; color: #ef6c00; border-top-color: #ef6c00; }
         .status-red { background-color: #ffebee; color: #c62828; border-top-color: #c62828; }
         .loading { text-align: center; font-size: 18px; color: #666; grid-column: 1 / -1; }
-        .no-data { text-align: center; font-size: 18px; color: #e74c3c; grid-column: 1 / -1; background: white; padding: 20px; border-radius: 8px; }
+        .error-msg { text-align: center; font-size: 16px; color: #c62828; grid-column: 1 / -1; background: #ffebee; padding: 20px; border-radius: 8px; border: 1px solid #ef9a9a; }
     </style>
 </head>
 <body>
@@ -32,15 +31,17 @@
         <input type="date" id="dateSelector" class="date-picker">
     </div>
     <div id="cardsContainer" class="cards-grid">
-        <div class="loading">กำลังเชื่อมต่อข้อมูลจากระบบ...</div>
+        <div class="loading">กำลังดึงข้อมูล... กรุณารอสักครู่</div>
     </div>
 </div>
+
 <script>
-    // ⚠️ นำลิงก์ CSV ใหม่ของคุณอั้มมาวางที่นี่
-    const sheetCsvUrl = 'วาง_LINK_CSV_ใหม่_ที่นี่';
+    // ⚠️ นำลิงก์ CSV ของคุณอั้มมาวางที่นี่ (ตรวจดูให้แน่ใจว่าลงท้ายด้วย output=csv หรือเป็นลิงก์ Publish แบบ CSV)
+    const sheetCsvUrl = 'ใส่ลิงก์ตรงนี้ครับ';
+    
     let hotelData = [];
 
-    // ฟังก์ชันช่วยแปลงข้อมูล CSV
+    // ฟังก์ชันช่วยแยกคอลัมน์และตัดช่องว่าง
     function parseCSVRow(row) {
         const matches = row.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
         if (!matches) return [];
@@ -51,15 +52,26 @@
         const container = document.getElementById('cardsContainer');
         const [year, month, day] = selectedDate.split('-');
         
-        // สร้างรูปแบบวันที่เพื่อค้นหาทั้ง 2 แบบ
-        const format1 = `${day}/${month}/${year}`;                   // วัน/เดือน/ปี (เช่น 21/03/2026)
-        const format2 = `${parseInt(month)}/${parseInt(day)}/${year}`; // เดือน/วัน/ปี (เช่น 3/21/2026)
-        
-        // กรองข้อมูลเฉพาะวันที่เลือก (ค้นหาทั้งสองรูปแบบ)
-        const filteredData = hotelData.filter(item => item.date === format1 || item.date === format2);
+        // รูปแบบที่คาดว่าจะเจอในระบบ (เอาเลข 0 นำหน้าออกด้วยเพื่อความชัวร์)
+        const format1 = `${day}/${month}/${year}`;
+        const format2 = `${parseInt(month)}/${parseInt(day)}/${year}`;
+        const format3 = `${parseInt(day)}/${parseInt(month)}/${year}`;
+
+        // กรองข้อมูล
+        const filteredData = hotelData.filter(item => 
+            item.date === format1 || item.date === format2 || item.date === format3 || item.date === selectedDate
+        );
 
         if (filteredData.length === 0) {
-            container.innerHTML = `<div class="no-data">ไม่พบข้อมูลสำหรับวันที่ ${format1} / ${format2} โปรดตรวจสอบการอัปเดตในระบบอีกครั้ง</div>`;
+            // โหมดนักสืบ: โชว์ตัวอย่างวันที่ในระบบให้ดูเลยว่าหน้าตาเป็นยังไง
+            let sampleDateText = hotelData.length > 0 ? hotelData[0].date : "ไม่มีข้อมูลในระบบ";
+            container.innerHTML = `
+                <div class="error-msg">
+                    <b>ไม่พบข้อมูลของวันที่เลือก</b><br><br>
+                    ระบบพยายามค้นหาคำว่า: ${format1} หรือ ${format2}<br>
+                    แต่ข้อมูลในไฟล์ Google Sheets บันทึกวันที่ไว้ในรูปแบบ: <b>${sampleDateText}</b><br><br>
+                    *ลองแคปหน้านี้ส่งให้ผมดูได้เลยครับ!*
+                </div>`;
             return;
         }
 
@@ -67,13 +79,12 @@
         filteredData.forEach(room => {
             let statusClass = 'status-red';
             let statusText = 'ห้องเต็ม';
-            
             if (room.available >= 5) {
                 statusClass = 'status-green';
                 statusText = `ว่าง ${room.available} ห้อง`;
             } else if (room.available > 0) {
                 statusClass = 'status-orange';
-                statusText = `เหลือเพียง ${room.available} ห้อง`;
+                statusText = `เหลือ ${room.available} ห้อง`;
             }
 
             html += `
@@ -81,8 +92,7 @@
                     <h3 class="room-type">${room.type}</h3>
                     <div class="price">${room.price} บาท</div>
                     <div class="available ${statusClass}">${statusText}</div>
-                </div>
-            `;
+                </div>`;
         });
         container.innerHTML = html;
     }
@@ -90,29 +100,47 @@
     fetch(sheetCsvUrl)
         .then(response => response.text())
         .then(csvText => {
+            const container = document.getElementById('cardsContainer');
+
+            // โหมดนักสืบ: เช็กว่าลิงก์ที่ใส่มา เป็นไฟล์ CSV จริง หรือเป็นหน้าเว็บ HTML
+            if (csvText.trim().toLowerCase().startsWith('<!doctype html>') || csvText.includes('<html')) {
+                container.innerHTML = `<div class="error-msg"><b>เกิดข้อผิดพลาด: ลิงก์ไม่ใช่ไฟล์ CSV</b><br>ลิงก์ที่คุณอั้มใส่มาเป็นหน้าเว็บปกติครับ ให้กลับไปที่ Google Sheets > ไฟล์ > แชร์ > เผยแพร่ไปยังเว็บ > แล้วเลือก "ค่าที่คั่นด้วยจุลภาค (.csv)" ครับ</div>`;
+                return;
+            }
+
             const rows = csvText.split('\n');
+            
             for (let i = 1; i < rows.length; i++) {
                 if (rows[i].trim() === '') continue;
                 const cols = parseCSVRow(rows[i]);
-                if (cols.length >= 12) {
+                
+                // ลดความเข้มงวดลง ถ้ามีคอลัมน์ถึงแค่ I (index 8) ก็ให้ดึงข้อมูลมาเลย
+                if (cols.length > 8) {
                     hotelData.push({
-                        date: cols[0],                           // คอลัมน์ A (วันที่)
-                        type: cols[3],                           // คอลัมน์ D (ประเภทห้อง)
-                        available: parseInt(cols[8] || 0, 10),   // คอลัมน์ I (ห้องว่าง)
-                        price: cols[11]                          // คอลัมน์ L (ราคา)
+                        date: cols[0] ? cols[0].trim() : '',                           // คอลัมน์ A (วันที่)
+                        type: cols[3] ? cols[3].trim() : '',                           // คอลัมน์ D (ประเภทห้อง)
+                        available: parseInt(cols[8] ? cols[8].trim() : "0", 10),       // คอลัมน์ I (ห้องว่าง)
+                        price: cols[11] ? cols[11].trim() : '0'                        // คอลัมน์ L (ราคา)
                     });
                 }
             }
+
+            if (hotelData.length === 0) {
+                 container.innerHTML = `<div class="error-msg"><b>ดึงไฟล์ได้ แต่ไม่พบข้อมูล:</b> อาจเกิดจากการตั้งค่าหน้า Calendar หรือคอลัมน์ไม่ตรงกัน</div>`;
+                 return;
+            }
+
             const today = new Date().toISOString().split('T')[0];
             const dateInput = document.getElementById('dateSelector');
             dateInput.value = today;
             renderCards(today);
+            
             dateInput.addEventListener('change', (e) => {
                 renderCards(e.target.value);
             });
         })
         .catch(error => {
-            document.getElementById('cardsContainer').innerHTML = '<div class="no-data">เกิดข้อผิดพลาดในการโหลดข้อมูล ตรวจสอบลิงก์ระบบอีกครั้ง</div>';
+            document.getElementById('cardsContainer').innerHTML = `<div class="error-msg">เกิดข้อผิดพลาดในการโหลดลิงก์: ${error.message}</div>`;
             console.error('Error:', error);
         });
 </script>
