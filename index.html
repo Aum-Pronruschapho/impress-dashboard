@@ -3,23 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impress Hotel - Room Rates Dashboard</title>
+    <title>Impress Hotel - Multi-Night Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; }
+        
         .header-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
         h2 { margin-top: 0; color: #2c3e50; }
-        .date-picker { font-size: 18px; padding: 10px 15px; border: 2px solid #3498db; border-radius: 8px; outline: none; cursor: pointer; color: #2c3e50; font-family: inherit; }
+        
+        /* จัดเลย์เอาต์ช่องเลือกวันที่ให้สวยงาม */
+        .date-controls { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+        .date-group { display: flex; flex-direction: column; text-align: left; }
+        .date-group label { font-size: 14px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; }
+        .date-picker { font-size: 16px; padding: 10px; border: 2px solid #3498db; border-radius: 8px; outline: none; cursor: pointer; color: #2c3e50; font-family: inherit; }
         .date-picker:focus { border-color: #2980b9; }
+        
+        /* สรุปจำนวนคืน */
+        .stay-summary { margin-top: 15px; font-size: 18px; font-weight: bold; color: #27ae60; background: #e8f5e9; padding: 10px; border-radius: 8px; display: inline-block; }
+        .stay-error { margin-top: 15px; font-size: 16px; font-weight: bold; color: #c62828; background: #ffebee; padding: 10px; border-radius: 8px; display: inline-block; }
+
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #bdc3c7; transition: transform 0.2s; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        .room-type { font-size: 20px; font-weight: bold; margin: 0 0 10px 0; color: #2c3e50; }
-        .price { font-size: 24px; font-weight: bold; color: #e74c3c; margin: 10px 0; }
-        .available { font-size: 16px; font-weight: bold; padding: 5px 10px; border-radius: 6px; display: inline-block; }
+        
+        .room-type { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; color: #2c3e50; }
+        .price-label { font-size: 14px; color: #7f8c8d; }
+        .price { font-size: 26px; font-weight: bold; color: #e74c3c; margin: 5px 0 10px 0; }
+        .available { font-size: 15px; font-weight: bold; padding: 5px 10px; border-radius: 6px; display: inline-block; }
+
         .status-green { background-color: #e8f5e9; color: #2e7d32; border-top-color: #2e7d32; }
         .status-orange { background-color: #fff3e0; color: #ef6c00; border-top-color: #ef6c00; }
         .status-red { background-color: #ffebee; color: #c62828; border-top-color: #c62828; }
+
         .loading { text-align: center; font-size: 18px; color: #666; grid-column: 1 / -1; }
         .no-data { text-align: center; font-size: 18px; color: #e74c3c; grid-column: 1 / -1; background: white; padding: 20px; border-radius: 8px; }
     </style>
@@ -28,62 +43,154 @@
 <div class="container">
     <div class="header-section">
         <h2>🏨 Impress Hotel - เช็กราคาและห้องว่าง</h2>
-        <p>เลือกวันที่ต้องการตรวจสอบ:</p>
-        <input type="date" id="dateSelector" class="date-picker">
+        
+        <div class="date-controls">
+            <div class="date-group">
+                <label>Check-in (วันเข้าพัก)</label>
+                <input type="date" id="checkInDate" class="date-picker">
+            </div>
+            <div class="date-group">
+                <label>Check-out (วันออก)</label>
+                <input type="date" id="checkOutDate" class="date-picker">
+            </div>
+        </div>
+        
+        <div id="summaryContainer">
+            </div>
     </div>
+    
     <div id="cardsContainer" class="cards-grid">
         <div class="loading">กำลังเชื่อมต่อข้อมูลจากระบบหลังบ้าน...</div>
     </div>
 </div>
 
 <script>
-    // ใส่ลิงก์ CSV ที่ถูกต้องเรียบร้อยแล้ว
     const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQksmZ8EHWQzPN459EmnppV8nMgBphWZRvHX8uNDxb1UHPpGNQB-LPHM4Giha7CxhVaNCKaXX8vsxG3/pub?gid=1864535639&single=true&output=csv';
-    
     let hotelData = [];
 
-    // ฟังก์ชันช่วยแยกคอลัมน์ CSV (จัดการปัญหาราคาที่มีลูกน้ำได้)
+    // ฟังก์ชันแยกคอลัมน์ CSV
     function parseCSVRow(row) {
         const matches = row.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
         if (!matches) return [];
         return matches.map(m => m.replace(/^"|"$/g, '').trim()).filter(m => m !== ',');
     }
 
-    function renderCards(selectedDate) {
-        const container = document.getElementById('cardsContainer');
-        const [year, month, day] = selectedDate.split('-');
+    // ฟังก์ชันสร้างรูปแบบวันที่ให้ตรงกับ Google Sheets
+    function getPossibleDateFormats(dateObj) {
+        const year = dateObj.getFullYear();
+        const month = dateObj.getMonth() + 1;
+        const day = dateObj.getDate();
         
-        // ค้นหาวันที่ครอบคลุมทุกรูปแบบเผื่อ Google Sheets สลับไปมา
-        const format1 = `${day}/${month}/${year}`;
-        const format2 = `${parseInt(month)}/${parseInt(day)}/${year}`;
-        const format3 = `${parseInt(day)}/${parseInt(month)}/${year}`;
-        
-        const filteredData = hotelData.filter(item => 
-            item.date === format1 || item.date === format2 || item.date === format3 || item.date === selectedDate
-        );
+        const padMonth = String(month).padStart(2, '0');
+        const padDay = String(day).padStart(2, '0');
+        const isoDate = `${year}-${padMonth}-${padDay}`;
 
-        if (filteredData.length === 0) {
-            container.innerHTML = `<div class="no-data">ไม่พบข้อมูลสำหรับวันที่เลือก โปรดตรวจสอบการอัปเดตในระบบอีกครั้ง</div>`;
+        return [
+            `${padDay}/${padMonth}/${year}`,
+            `${month}/${day}/${year}`,
+            `${day}/${month}/${year}`,
+            isoDate
+        ];
+    }
+
+    // ฟังก์ชันหลักสำหรับประมวลผลการเข้าพักหลายคืน
+    function calculateStay() {
+        const checkInVal = document.getElementById('checkInDate').value;
+        const checkOutVal = document.getElementById('checkOutDate').value;
+        const container = document.getElementById('cardsContainer');
+        const summaryContainer = document.getElementById('summaryContainer');
+
+        if (!checkInVal || !checkOutVal) return;
+
+        const checkInDate = new Date(checkInVal);
+        const checkOutDate = new Date(checkOutVal);
+
+        // เช็กว่าวัน Check-out ต้องมากกว่า Check-in
+        if (checkOutDate <= checkInDate) {
+            summaryContainer.innerHTML = `<div class="stay-error">⚠️ วัน Check-out ต้องอยู่หลังวัน Check-in เสมอ</div>`;
+            container.innerHTML = '';
             return;
         }
 
+        // คำนวณจำนวนคืน
+        const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
+        const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        
+        summaryContainer.innerHTML = `<div class="stay-summary">🌙 เข้าพัก ${nights} คืน</div>`;
+
+        // หาวันที่ต้องเช็กราคาทั้งหมด (ตั้งแต่ Check-in ถึงคืนก่อน Check-out)
+        let datesToCheck = [];
+        let currentDate = new Date(checkInDate);
+        while (currentDate < checkOutDate) {
+            datesToCheck.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // หารายชื่อประเภทห้องทั้งหมดที่มีในระบบ
+        const roomTypes = [...new Set(hotelData.map(item => item.type))];
+        let displayData = [];
+
+        roomTypes.forEach(type => {
+            let totalPrice = 0;
+            let minAvailable = Infinity;
+            let hasDataForAllNights = true;
+
+            // เช็กข้อมูลทีละคืนสำหรับห้องประเภทนี้
+            for (let i = 0; i < datesToCheck.length; i++) {
+                const possibleFormats = getPossibleDateFormats(datesToCheck[i]);
+                const dailyRecord = hotelData.find(item => item.type === type && possibleFormats.includes(item.date));
+
+                if (dailyRecord) {
+                    // ลบลูกน้ำออกจากราคาแล้วแปลงเป็นตัวเลขเพื่อนำมาบวกกัน
+                    let priceNum = parseInt(dailyRecord.price.replace(/,/g, ''), 10);
+                    if (isNaN(priceNum)) priceNum = 0;
+                    
+                    totalPrice += priceNum;
+                    minAvailable = Math.min(minAvailable, dailyRecord.available);
+                } else {
+                    // ถ้าหาข้อมูลของคืนไหนไม่เจอ แปลว่าข้อมูลใน Sheets ยังไม่อัปเดตถึงวันนั้น
+                    hasDataForAllNights = false;
+                    break;
+                }
+            }
+
+            if (hasDataForAllNights) {
+                displayData.push({
+                    type: type,
+                    totalPrice: totalPrice,
+                    available: minAvailable,
+                    nights: nights
+                });
+            }
+        });
+
+        if (displayData.length === 0) {
+            container.innerHTML = `<div class="no-data">ไม่พบข้อมูลราคาที่ครบถ้วนสำหรับช่วงวันที่เลือก (ห้องอาจจะเต็ม หรือยังไม่ได้เปิดราคาในระบบ)</div>`;
+            return;
+        }
+
+        // สร้าง Card แสดงผล
         let html = '';
-        filteredData.forEach(room => {
+        displayData.forEach(room => {
             let statusClass = 'status-red';
-            let statusText = 'ห้องเต็ม';
+            let statusText = 'ห้องเต็มทั้งหมด';
             
             if (room.available >= 5) {
                 statusClass = 'status-green';
-                statusText = `ว่าง ${room.available} ห้อง`;
+                statusText = `ตลอดช่วงที่พัก มีห้องว่าง ${room.available} ห้อง`;
             } else if (room.available > 0) {
                 statusClass = 'status-orange';
-                statusText = `เหลือเพียง ${room.available} ห้อง`;
+                statusText = `ตลอดช่วงที่พัก เหลือเพียง ${room.available} ห้อง`;
             }
+
+            // ใส่ลูกน้ำกลับเข้าไปในราคารวม
+            const formattedPrice = room.totalPrice.toLocaleString('th-TH');
 
             html += `
                 <div class="card ${statusClass}">
                     <h3 class="room-type">${room.type}</h3>
-                    <div class="price">${room.price} บาท</div>
+                    <div class="price-label">ราคารวม ${room.nights} คืน (NET)</div>
+                    <div class="price">${formattedPrice} ฿</div>
                     <div class="available ${statusClass}">${statusText}</div>
                 </div>
             `;
@@ -91,6 +198,7 @@
         container.innerHTML = html;
     }
 
+    // โหลดข้อมูลจาก Google Sheets
     fetch(sheetCsvUrl)
         .then(response => response.text())
         .then(csvText => {
@@ -99,7 +207,6 @@
                 if (rows[i].trim() === '') continue;
                 const cols = parseCSVRow(rows[i]);
                 
-                // ดึงข้อมูลถ้ามีคอลัมน์ถึง L (index 11) หรืออย่างน้อยถึง I (index 8)
                 if (cols.length >= 9) {
                     hotelData.push({
                         date: cols[0] ? cols[0].trim() : '',                           
@@ -110,14 +217,20 @@
                 }
             }
             
-            const today = new Date().toISOString().split('T')[0];
-            const dateInput = document.getElementById('dateSelector');
-            dateInput.value = today;
-            renderCards(today);
+            // ตั้งค่าเริ่มต้นของปฏิทิน: Check-in = วันนี้, Check-out = พรุ่งนี้
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            document.getElementById('checkInDate').value = today.toISOString().split('T')[0];
+            document.getElementById('checkOutDate').value = tomorrow.toISOString().split('T')[0];
             
-            dateInput.addEventListener('change', (e) => {
-                renderCards(e.target.value);
-            });
+            // คำนวณครั้งแรกเมื่อเปิดหน้าเว็บ
+            calculateStay();
+            
+            // ให้ระบบคำนวณใหม่ทุกครั้งที่มีการเปลี่ยนวันที่
+            document.getElementById('checkInDate').addEventListener('change', calculateStay);
+            document.getElementById('checkOutDate').addEventListener('change', calculateStay);
         })
         .catch(error => {
             document.getElementById('cardsContainer').innerHTML = '<div class="no-data">เกิดข้อผิดพลาดในการโหลดข้อมูล ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</div>';
