@@ -7,59 +7,40 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; }
-        
-        /* ส่วนหัวและปฏิทิน */
         .header-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
         h2 { margin-top: 0; color: #2c3e50; }
         .date-picker { font-size: 18px; padding: 10px 15px; border: 2px solid #3498db; border-radius: 8px; outline: none; cursor: pointer; color: #2c3e50; font-family: inherit; }
         .date-picker:focus { border-color: #2980b9; }
-
-        /* ส่วนแสดงผลแบบ Card */
         .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #bdc3c7; transition: transform 0.2s; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        
         .room-type { font-size: 20px; font-weight: bold; margin: 0 0 10px 0; color: #2c3e50; }
         .price { font-size: 24px; font-weight: bold; color: #e74c3c; margin: 10px 0; }
         .available { font-size: 16px; font-weight: bold; padding: 5px 10px; border-radius: 6px; display: inline-block; }
-
-        /* สีสถานะห้องว่าง */
         .status-green { background-color: #e8f5e9; color: #2e7d32; border-top-color: #2e7d32; }
         .status-orange { background-color: #fff3e0; color: #ef6c00; border-top-color: #ef6c00; }
         .status-red { background-color: #ffebee; color: #c62828; border-top-color: #c62828; }
-
         .loading { text-align: center; font-size: 18px; color: #666; grid-column: 1 / -1; }
         .no-data { text-align: center; font-size: 18px; color: #e74c3c; grid-column: 1 / -1; background: white; padding: 20px; border-radius: 8px; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <div class="header-section">
         <h2>🏨 Impress Hotel - เช็กราคาและห้องว่าง</h2>
         <p>เลือกวันที่ต้องการตรวจสอบ:</p>
         <input type="date" id="dateSelector" class="date-picker">
     </div>
-
     <div id="cardsContainer" class="cards-grid">
         <div class="loading">กำลังเชื่อมต่อข้อมูลจากระบบ...</div>
     </div>
 </div>
-
 <script>
-    // ⚠️ นำลิงก์ CSV หน้า Calendar ของคุณอั้มมาวางแทนที่ข้อความในเครื่องหมายคำพูดด้านล่างนี้
-    const sheetCsvUrl = 'วาง_LINK_CSV_ตรงนี้';
-    
+    // ⚠️ นำลิงก์ CSV ใหม่ของคุณอั้มมาวางที่นี่
+    const sheetCsvUrl = 'วาง_LINK_CSV_ใหม่_ที่นี่';
     let hotelData = [];
 
-    // ฟังก์ชันแปลงวันที่ให้ตรงกับระบบหลังบ้าน (เดือน/วัน/ปี)
-    function formatDateToMatchSheet(dateString) {
-        if (!dateString) return '';
-        const [year, month, day] = dateString.split('-');
-        return `${parseInt(month)}/${parseInt(day)}/${year}`; 
-    }
-
-    // ฟังก์ชันช่วยแยกข้อมูล CSV (ป้องกันปัญหาราคาที่มีเครื่องหมายลูกน้ำเช่น "1,500")
+    // ฟังก์ชันช่วยแปลงข้อมูล CSV
     function parseCSVRow(row) {
         const matches = row.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
         if (!matches) return [];
@@ -68,12 +49,17 @@
 
     function renderCards(selectedDate) {
         const container = document.getElementById('cardsContainer');
-        const formattedDate = formatDateToMatchSheet(selectedDate);
+        const [year, month, day] = selectedDate.split('-');
         
-        const filteredData = hotelData.filter(item => item.date === formattedDate);
+        // สร้างรูปแบบวันที่เพื่อค้นหาทั้ง 2 แบบ
+        const format1 = `${day}/${month}/${year}`;                   // วัน/เดือน/ปี (เช่น 21/03/2026)
+        const format2 = `${parseInt(month)}/${parseInt(day)}/${year}`; // เดือน/วัน/ปี (เช่น 3/21/2026)
+        
+        // กรองข้อมูลเฉพาะวันที่เลือก (ค้นหาทั้งสองรูปแบบ)
+        const filteredData = hotelData.filter(item => item.date === format1 || item.date === format2);
 
         if (filteredData.length === 0) {
-            container.innerHTML = `<div class="no-data">ไม่พบข้อมูลสำหรับวันที่เลือก โปรดตรวจสอบการอัปเดตในระบบอีกครั้ง</div>`;
+            container.innerHTML = `<div class="no-data">ไม่พบข้อมูลสำหรับวันที่ ${format1} / ${format2} โปรดตรวจสอบการอัปเดตในระบบอีกครั้ง</div>`;
             return;
         }
 
@@ -98,7 +84,6 @@
                 </div>
             `;
         });
-
         container.innerHTML = html;
     }
 
@@ -106,13 +91,9 @@
         .then(response => response.text())
         .then(csvText => {
             const rows = csvText.split('\n');
-            
             for (let i = 1; i < rows.length; i++) {
                 if (rows[i].trim() === '') continue;
-                
-                // ใช้ฟังก์ชันแยกคอลัมน์แบบพิเศษแทนการใช้ split ธรรมดา
                 const cols = parseCSVRow(rows[i]);
-                
                 if (cols.length >= 12) {
                     hotelData.push({
                         date: cols[0],                           // คอลัมน์ A (วันที่)
@@ -122,23 +103,18 @@
                     });
                 }
             }
-
             const today = new Date().toISOString().split('T')[0];
             const dateInput = document.getElementById('dateSelector');
             dateInput.value = today;
-
             renderCards(today);
-
             dateInput.addEventListener('change', (e) => {
                 renderCards(e.target.value);
             });
-            
         })
         .catch(error => {
             document.getElementById('cardsContainer').innerHTML = '<div class="no-data">เกิดข้อผิดพลาดในการโหลดข้อมูล ตรวจสอบลิงก์ระบบอีกครั้ง</div>';
             console.error('Error:', error);
         });
 </script>
-
 </body>
 </html>
