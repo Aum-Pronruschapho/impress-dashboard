@@ -1,241 +1,340 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Impress Hotel - Multi-Night Dashboard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; }
-        
-        .header-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
-        h2 { margin-top: 0; color: #2c3e50; }
-        
-        /* จัดเลย์เอาต์ช่องเลือกวันที่ให้สวยงาม */
-        .date-controls { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
-        .date-group { display: flex; flex-direction: column; text-align: left; }
-        .date-group label { font-size: 14px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; }
-        .date-picker { font-size: 16px; padding: 10px; border: 2px solid #3498db; border-radius: 8px; outline: none; cursor: pointer; color: #2c3e50; font-family: inherit; }
-        .date-picker:focus { border-color: #2980b9; }
-        
-        /* สรุปจำนวนคืน */
-        .stay-summary { margin-top: 15px; font-size: 18px; font-weight: bold; color: #27ae60; background: #e8f5e9; padding: 10px; border-radius: 8px; display: inline-block; }
-        .stay-error { margin-top: 15px; font-size: 16px; font-weight: bold; color: #c62828; background: #ffebee; padding: 10px; border-radius: 8px; display: inline-block; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impress Hotel · ราคาและห้องว่าง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF9;
+  --card:#FFFFFF;
+  --line:#ECECEA;
+  --ink:#1C1C1A;
+  --muted:#8A8A86;
+  --faint:#B5B5B0;
+  --green:#12805C;--green-bg:#EAF5F0;
+  --amber:#B7791F;--amber-bg:#FBF3E4;
+  --red:#C0392B;--red-bg:#FAECEA;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'IBM Plex Sans Thai',sans-serif;
+  background:var(--bg);color:var(--ink);
+  min-height:100vh;padding:28px 16px 60px;
+  font-feature-settings:'tnum';
+}
+.wrap{max-width:960px;margin:0 auto}
 
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #bdc3c7; transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        
-        .room-type { font-size: 20px; font-weight: bold; margin: 0 0 5px 0; color: #2c3e50; }
-        .price-label { font-size: 14px; color: #7f8c8d; }
-        .price { font-size: 26px; font-weight: bold; color: #e74c3c; margin: 5px 0 10px 0; }
-        .available { font-size: 15px; font-weight: bold; padding: 5px 10px; border-radius: 6px; display: inline-block; }
+/* ── Header ── */
+header{margin-bottom:24px}
+.eyebrow{font-size:.7rem;letter-spacing:.22em;color:var(--faint);font-weight:600;text-transform:uppercase}
+h1{font-size:1.3rem;font-weight:600;margin-top:4px}
 
-        .status-green { background-color: #e8f5e9; color: #2e7d32; border-top-color: #2e7d32; }
-        .status-orange { background-color: #fff3e0; color: #ef6c00; border-top-color: #ef6c00; }
-        .status-red { background-color: #ffebee; color: #c62828; border-top-color: #c62828; }
+.controls{
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;
+  margin-top:18px;padding:16px;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;
+}
+.field label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:5px;font-weight:500}
+.field input{
+  font:inherit;font-size:.9rem;color:var(--ink);
+  border:1px solid var(--line);border-radius:9px;
+  padding:8px 10px;background:var(--bg);
+}
+.field input:focus{outline:2px solid var(--ink);outline-offset:-1px}
+.nights-pill{
+  font-size:.82rem;color:var(--muted);
+  padding:8px 14px;border:1px dashed var(--line);border-radius:9px;
+}
+.meta{
+  margin-left:auto;display:flex;align-items:center;gap:10px;
+  font-size:.74rem;color:var(--faint);
+}
+.meta button{
+  font:inherit;font-size:.76rem;cursor:pointer;color:var(--muted);
+  border:1px solid var(--line);background:var(--card);
+  border-radius:8px;padding:5px 12px;
+}
+.meta button:hover{border-color:var(--muted)}
+.err{
+  margin-top:14px;font-size:.85rem;color:var(--red);
+  background:var(--red-bg);border-radius:10px;padding:11px 15px;display:none;
+}
 
-        .loading { text-align: center; font-size: 18px; color: #666; grid-column: 1 / -1; }
-        .no-data { text-align: center; font-size: 18px; color: #e74c3c; grid-column: 1 / -1; background: white; padding: 20px; border-radius: 8px; }
-    </style>
+/* ── Cards ── */
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:12px;margin-top:20px;
+}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px;
+}
+.card.full{background:#FCFBFA}
+.c-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.c-type{font-size:.95rem;font-weight:600;line-height:1.3}
+.badge{
+  font-size:.66rem;font-weight:600;letter-spacing:.06em;white-space:nowrap;
+  padding:3px 8px;border-radius:20px;
+}
+.badge.stop{background:var(--red-bg);color:var(--red)}
+.badge.ok{background:var(--green-bg);color:var(--green)}
+.badge.low{background:var(--amber-bg);color:var(--amber)}
+
+.c-price{line-height:1}
+.c-price .amt{font-size:1.9rem;font-weight:700;letter-spacing:-.01em}
+.c-price .cur{font-size:.95rem;font-weight:500;color:var(--muted);margin-right:2px}
+.c-price .per{font-size:.72rem;color:var(--faint);margin-top:5px;display:block}
+.card.full .c-price .amt,.card.full .c-price .cur{color:var(--faint)}
+
+.c-inv{margin-top:auto}
+.bar{height:5px;border-radius:3px;background:#F0F0EE;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--ink);transition:width .4s ease}
+.card.full .bar i{background:var(--red)}
+.c-nums{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-top:8px;font-size:.78rem;color:var(--muted);
+}
+.c-nums b{font-size:.92rem;color:var(--ink);font-weight:600}
+.c-nums .left-num b{color:var(--green)}
+.card .c-nums .left-num.zero b{color:var(--red)}
+.c-nums .total{color:var(--faint)}
+
+.note{margin-top:14px;font-size:.72rem;color:var(--faint)}
+.no-data{
+  grid-column:1/-1;text-align:center;padding:40px 20px;
+  color:var(--muted);font-size:.9rem;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;
+}
+footer{margin-top:34px;text-align:center;font-size:.7rem;color:var(--faint)}
+@media (max-width:560px){
+  .meta{margin-left:0;width:100%;justify-content:space-between}
+  .c-price .amt{font-size:1.7rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
 <body>
-<div class="container">
-    <div class="header-section">
-        <h2>🏨 Impress Hotel - เช็กราคาและห้องว่าง</h2>
-        
-        <div class="date-controls">
-            <div class="date-group">
-                <label>Check-in (วันเข้าพัก)</label>
-                <input type="date" id="checkInDate" class="date-picker">
-            </div>
-            <div class="date-group">
-                <label>Check-out (วันออก)</label>
-                <input type="date" id="checkOutDate" class="date-picker">
-            </div>
-        </div>
-        
-        <div id="summaryContainer">
-            </div>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Impress Hotel Huai Khwang</div>
+    <h1>ราคาจองตรง &amp; ห้องว่าง</h1>
+    <div class="controls">
+      <div class="field">
+        <label for="checkInDate">Check-in</label>
+        <input type="date" id="checkInDate">
+      </div>
+      <div class="field">
+        <label for="checkOutDate">Check-out</label>
+        <input type="date" id="checkOutDate">
+      </div>
+      <div class="nights-pill" id="nightsPill">— คืน</div>
+      <div class="meta">
+        <span id="lastUpdated">กำลังโหลด…</span>
+        <button onclick="loadData()">รีเฟรช</button>
+      </div>
     </div>
-    
-    <div id="cardsContainer" class="cards-grid">
-        <div class="loading">กำลังเชื่อมต่อข้อมูลจากระบบหลังบ้าน...</div>
-    </div>
+    <div class="err" id="errBox"></div>
+  </header>
+
+  <div class="grid" id="cardsContainer">
+    <div class="no-data">กำลังเชื่อมต่อข้อมูล…</div>
+  </div>
+  <div class="note" id="multiNote" style="display:none">* Sold / คงเหลือ อิงจากคืนที่ห้องเหลือน้อยที่สุดในช่วงวันที่เลือก · ราคาคือยอดรวมทุกคืน</div>
+
+  <footer>สำหรับใช้ภายใน · อัปเดตจาก Master Rate Structure</footer>
 </div>
 
 <script>
-    const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQksmZ8EHWQzPN459EmnppV8nMgBphWZRvHX8uNDxb1UHPpGNQB-LPHM4Giha7CxhVaNCKaXX8vsxG3/pub?gid=1864535639&single=true&output=csv';
-    let hotelData = [];
+/* ══════════════════════════════════════════════════════════════
+   ⚙️ ตั้งค่าแหล่งข้อมูล
+   SHEET_ID = เอาจากลิงก์ Google Sheet ปกติ (แบบที่ใช้แก้ไขได้)
+   https://docs.google.com/spreadsheets/d/【ส่วนนี้คือ SHEET_ID】/edit
+   ※ ต้องแชร์ Sheet เป็น "Anyone with the link → Viewer"
+   ══════════════════════════════════════════════════════════════ */
+const SHEET_ID  = '1KTIWnLb7ItdPzqa2d1XhAFDLcHHLWjbEHm2CVg4pvgI';
+const SHEET_GID = '1864535639';
 
-    // ฟังก์ชันแยกคอลัมน์ CSV
-    function parseCSVRow(row) {
-        const matches = row.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
-        if (!matches) return [];
-        return matches.map(m => m.replace(/^"|"$/g, '').trim()).filter(m => m !== ',');
+/* ลำดับการแสดงผล Room Type */
+const ROOM_ORDER = ['Superior Twin','Deluxe Premium','Deluxe Luxury','Superior Triple','Luxury Triple'];
+
+/* ตำแหน่งคอลัมน์ในชีต (เริ่มนับจาก 0)
+   0 DATE · 3 Room Type · 6 No. of Room · 7 Sold · 8 Left · 11 Direct Sale Price · 22 Stop Sell */
+const COL = {date:0, type:3, total:6, sold:7, left:8, price:11, stop:22};
+
+// gviz = ข้อมูลสดแทบทันที (ไม่ติด cache 5 นาทีแบบ Publish to web)
+const gvizUrl = () => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}&cb=${Date.now()}`;
+// ลิงก์เดิม (Publish to web) เป็น fallback เผื่อ gviz ใช้ไม่ได้
+const pubUrl  = () => 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQksmZ8EHWQzPN459EmnppV8nMgBphWZRvHX8uNDxb1UHPpGNQB-LPHM4Giha7CxhVaNCKaXX8vsxG3/pub?gid=1864535639&single=true&output=csv&cb=' + Date.now();
+
+let hotelData = [];
+let firstLoad = true;
+
+/* ── CSV parser แบบเต็มรูปแบบ (รองรับ "1,339" และช่องว่าง) ── */
+function parseCSV(text){
+  text = text.replace(/^\uFEFF/,'');
+  const rows=[]; let row=[], cell='', inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else inQ=false; }
+      else cell+=c;
+    }else{
+      if(c==='"') inQ=true;
+      else if(c===','){ row.push(cell); cell=''; }
+      else if(c==='\n'||c==='\r'){
+        if(c==='\r'&&text[i+1]==='\n') i++;
+        row.push(cell); rows.push(row); row=[]; cell='';
+      }else cell+=c;
     }
+  }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+const toNum = s => { const n=parseInt(String(s||'').replace(/[,\s฿]/g,''),10); return isNaN(n)?0:n; };
 
-    // ฟังก์ชันสร้างรูปแบบวันที่ให้ตรงกับ Google Sheets
-    function getPossibleDateFormats(dateObj) {
-        const year = dateObj.getFullYear();
-        const month = dateObj.getMonth() + 1;
-        const day = dateObj.getDate();
-        
-        const padMonth = String(month).padStart(2, '0');
-        const padDay = String(day).padStart(2, '0');
-        const isoDate = `${year}-${padMonth}-${padDay}`;
+function buildRecords(csvText){
+  const out=[];
+  for(const r of parseCSV(csvText)){
+    const date=(r[COL.date]||'').trim();
+    if(!/^\d{1,2}\/\d{1,2}\/\d{4}$|^\d{4}-\d{2}-\d{2}$/.test(date)) continue; // ข้ามหัวตาราง/แถวว่าง
+    out.push({
+      date,
+      type:(r[COL.type]||'').trim(),
+      total:toNum(r[COL.total]),
+      sold:toNum(r[COL.sold]),
+      left:toNum(r[COL.left]),
+      price:toNum(r[COL.price]),
+      stop:/stop/i.test(r[COL.stop]||'')
+    });
+  }
+  return out;
+}
 
-        return [
-            `${padDay}/${padMonth}/${year}`,
-            `${month}/${day}/${year}`,
-            `${day}/${month}/${year}`,
-            isoDate
-        ];
+/* ── รูปแบบวันที่ที่เป็นไปได้ (logic เดิม) ── */
+function getPossibleDateFormats(d){
+  const y=d.getFullYear(), m=d.getMonth()+1, dd=d.getDate();
+  const pm=String(m).padStart(2,'0'), pd=String(dd).padStart(2,'0');
+  return [`${pd}/${pm}/${y}`, `${m}/${dd}/${y}`, `${dd}/${m}/${y}`, `${y}-${pm}-${pd}`];
+}
+
+/* ── คำนวณและแสดงผล ── */
+function calculateStay(){
+  const ci=document.getElementById('checkInDate').value;
+  const co=document.getElementById('checkOutDate').value;
+  const grid=document.getElementById('cardsContainer');
+  const err=document.getElementById('errBox');
+  if(!ci||!co) return;
+
+  const inD=new Date(ci), outD=new Date(co);
+  if(outD<=inD){
+    err.style.display='block';
+    err.textContent='วัน Check-out ต้องอยู่หลังวัน Check-in';
+    grid.innerHTML=''; return;
+  }
+  err.style.display='none';
+
+  const nights=Math.round((outD-inD)/86400000);
+  document.getElementById('nightsPill').textContent=`เข้าพัก ${nights} คืน`;
+  document.getElementById('multiNote').style.display=nights>1?'block':'none';
+
+  /* วันที่ต้องเช็ก: Check-in ถึงคืนก่อน Check-out */
+  const dates=[]; let cur=new Date(inD);
+  while(cur<outD){ dates.push(new Date(cur)); cur.setDate(cur.getDate()+1); }
+
+  /* room types: เรียงตาม ROOM_ORDER ก่อน ที่เหลือต่อท้าย */
+  const inSheet=[...new Set(hotelData.map(x=>x.type))];
+  const types=[...ROOM_ORDER.filter(t=>inSheet.includes(t)),
+               ...inSheet.filter(t=>!ROOM_ORDER.includes(t)).sort()];
+
+  const cards=[];
+  for(const type of types){
+    let totalPrice=0, worst=null, anyStop=false, complete=true;
+    for(const d of dates){
+      const fmts=getPossibleDateFormats(d);
+      const rec=hotelData.find(x=>x.type===type && fmts.includes(x.date));
+      if(!rec){ complete=false; break; }
+      totalPrice+=rec.price;
+      anyStop=anyStop||rec.stop;
+      if(!worst||rec.left<worst.left) worst=rec;   // คืนที่ห้องเหลือน้อยที่สุด
     }
+    if(complete&&worst) cards.push({type,totalPrice,nights,anyStop,
+      sold:worst.sold,left:worst.left,total:worst.total});
+  }
 
-    // ฟังก์ชันหลักสำหรับประมวลผลการเข้าพักหลายคืน
-    function calculateStay() {
-        const checkInVal = document.getElementById('checkInDate').value;
-        const checkOutVal = document.getElementById('checkOutDate').value;
-        const container = document.getElementById('cardsContainer');
-        const summaryContainer = document.getElementById('summaryContainer');
+  if(!cards.length){
+    grid.innerHTML='<div class="no-data">ไม่พบข้อมูลราคาที่ครบถ้วนสำหรับช่วงวันที่เลือก<br>(ยังไม่ได้เปิดราคาในระบบถึงวันนั้น)</div>';
+    return;
+  }
 
-        if (!checkInVal || !checkOutVal) return;
+  grid.innerHTML=cards.map(c=>{
+    const soldOut=c.left<=0;
+    const low=!soldOut&&(c.left<=2||c.left/c.total<=0.15);
+    const badge=c.anyStop?'<span class="badge stop">STOP SELL</span>'
+              :soldOut ?'<span class="badge stop">เต็ม</span>'
+              :low     ?`<span class="badge low">เหลือน้อย</span>`
+                       :`<span class="badge ok">ว่าง</span>`;
+    const pct=c.total?Math.min(100,Math.round(c.sold/c.total*100)):0;
+    return `
+    <div class="card${soldOut?' full':''}">
+      <div class="c-top"><div class="c-type">${c.type}</div>${badge}</div>
+      <div class="c-price">
+        <span class="cur">฿</span><span class="amt">${c.totalPrice.toLocaleString('th-TH')}</span>
+        <span class="per">${c.nights>1?`รวม ${c.nights} คืน`:'ต่อคืน · ราคาจองตรง'}</span>
+      </div>
+      <div class="c-inv">
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="c-nums">
+          <span>ขายแล้ว <b>${c.sold}</b></span>
+          <span class="left-num${soldOut?' zero':''}">คงเหลือ <b>${c.left}</b></span>
+          <span class="total">จาก ${c.total} ห้อง</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-        const checkInDate = new Date(checkInVal);
-        const checkOutDate = new Date(checkOutVal);
+/* ── โหลดข้อมูล: gviz ก่อน → fallback ลิงก์เดิม ── */
+async function fetchCsv(url){
+  const res=await fetch(url,{cache:'no-store'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return res.text();
+}
+async function loadData(){
+  let recs=[];
+  if(SHEET_ID && !SHEET_ID.startsWith('ใส่_')){
+    try{ recs=buildRecords(await fetchCsv(gvizUrl())); }catch(e){ console.warn('gviz fail → fallback',e); }
+  }
+  if(!recs.length){
+    try{ recs=buildRecords(await fetchCsv(pubUrl())); }catch(e){ console.error(e); }
+  }
+  if(!recs.length){
+    if(firstLoad) document.getElementById('cardsContainer').innerHTML=
+      '<div class="no-data">เชื่อมต่อข้อมูลไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต แล้วกดรีเฟรช</div>';
+    return;
+  }
+  hotelData=recs;
 
-        // เช็กว่าวัน Check-out ต้องมากกว่า Check-in
-        if (checkOutDate <= checkInDate) {
-            summaryContainer.innerHTML = `<div class="stay-error">⚠️ วัน Check-out ต้องอยู่หลังวัน Check-in เสมอ</div>`;
-            container.innerHTML = '';
-            return;
-        }
+  if(firstLoad){
+    firstLoad=false;
+    const t=new Date(), tm=new Date(t); tm.setDate(tm.getDate()+1);
+    document.getElementById('checkInDate').value=t.toISOString().split('T')[0];
+    document.getElementById('checkOutDate').value=tm.toISOString().split('T')[0];
+    document.getElementById('checkInDate').addEventListener('change',calculateStay);
+    document.getElementById('checkOutDate').addEventListener('change',calculateStay);
+  }
+  calculateStay(); // คงวันที่ที่ผู้ใช้เลือกไว้
+  document.getElementById('lastUpdated').textContent='อัปเดต '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
 
-        // คำนวณจำนวนคืน
-        const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
-        const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        
-        summaryContainer.innerHTML = `<div class="stay-summary">🌙 เข้าพัก ${nights} คืน</div>`;
-
-        // หาวันที่ต้องเช็กราคาทั้งหมด (ตั้งแต่ Check-in ถึงคืนก่อน Check-out)
-        let datesToCheck = [];
-        let currentDate = new Date(checkInDate);
-        while (currentDate < checkOutDate) {
-            datesToCheck.push(new Date(currentDate));
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // หารายชื่อประเภทห้องทั้งหมดที่มีในระบบ
-        const roomTypes = [...new Set(hotelData.map(item => item.type))];
-        let displayData = [];
-
-        roomTypes.forEach(type => {
-            let totalPrice = 0;
-            let minAvailable = Infinity;
-            let hasDataForAllNights = true;
-
-            // เช็กข้อมูลทีละคืนสำหรับห้องประเภทนี้
-            for (let i = 0; i < datesToCheck.length; i++) {
-                const possibleFormats = getPossibleDateFormats(datesToCheck[i]);
-                const dailyRecord = hotelData.find(item => item.type === type && possibleFormats.includes(item.date));
-
-                if (dailyRecord) {
-                    // ลบลูกน้ำออกจากราคาแล้วแปลงเป็นตัวเลขเพื่อนำมาบวกกัน
-                    let priceNum = parseInt(dailyRecord.price.replace(/,/g, ''), 10);
-                    if (isNaN(priceNum)) priceNum = 0;
-                    
-                    totalPrice += priceNum;
-                    minAvailable = Math.min(minAvailable, dailyRecord.available);
-                } else {
-                    // ถ้าหาข้อมูลของคืนไหนไม่เจอ แปลว่าข้อมูลใน Sheets ยังไม่อัปเดตถึงวันนั้น
-                    hasDataForAllNights = false;
-                    break;
-                }
-            }
-
-            if (hasDataForAllNights) {
-                displayData.push({
-                    type: type,
-                    totalPrice: totalPrice,
-                    available: minAvailable,
-                    nights: nights
-                });
-            }
-        });
-
-        if (displayData.length === 0) {
-            container.innerHTML = `<div class="no-data">ไม่พบข้อมูลราคาที่ครบถ้วนสำหรับช่วงวันที่เลือก (ห้องอาจจะเต็ม หรือยังไม่ได้เปิดราคาในระบบ)</div>`;
-            return;
-        }
-
-        // สร้าง Card แสดงผล
-        let html = '';
-        displayData.forEach(room => {
-            let statusClass = 'status-red';
-            let statusText = 'ห้องเต็มทั้งหมด';
-            
-            if (room.available >= 5) {
-                statusClass = 'status-green';
-                statusText = `ตลอดช่วงที่พัก มีห้องว่าง ${room.available} ห้อง`;
-            } else if (room.available > 0) {
-                statusClass = 'status-orange';
-                statusText = `ตลอดช่วงที่พัก เหลือเพียง ${room.available} ห้อง`;
-            }
-
-            // ใส่ลูกน้ำกลับเข้าไปในราคารวม
-            const formattedPrice = room.totalPrice.toLocaleString('th-TH');
-
-            html += `
-                <div class="card ${statusClass}">
-                    <h3 class="room-type">${room.type}</h3>
-                    <div class="price-label">ราคารวม ${room.nights} คืน (NET)</div>
-                    <div class="price">${formattedPrice} ฿</div>
-                    <div class="available ${statusClass}">${statusText}</div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    // โหลดข้อมูลจาก Google Sheets
-    fetch(sheetCsvUrl)
-        .then(response => response.text())
-        .then(csvText => {
-            const rows = csvText.split('\n');
-            for (let i = 1; i < rows.length; i++) {
-                if (rows[i].trim() === '') continue;
-                const cols = parseCSVRow(rows[i]);
-                
-                if (cols.length >= 9) {
-                    hotelData.push({
-                        date: cols[0] ? cols[0].trim() : '',                           
-                        type: cols[3] ? cols[3].trim() : '',                           
-                        available: parseInt(cols[8] ? cols[8].trim() : "0", 10),       
-                        price: cols[11] ? cols[11].trim() : '0'                        
-                    });
-                }
-            }
-            
-            // ตั้งค่าเริ่มต้นของปฏิทิน: Check-in = วันนี้, Check-out = พรุ่งนี้
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            document.getElementById('checkInDate').value = today.toISOString().split('T')[0];
-            document.getElementById('checkOutDate').value = tomorrow.toISOString().split('T')[0];
-            
-            // คำนวณครั้งแรกเมื่อเปิดหน้าเว็บ
-            calculateStay();
-            
-            // ให้ระบบคำนวณใหม่ทุกครั้งที่มีการเปลี่ยนวันที่
-            document.getElementById('checkInDate').addEventListener('change', calculateStay);
-            document.getElementById('checkOutDate').addEventListener('change', calculateStay);
-        })
-        .catch(error => {
-            document.getElementById('cardsContainer').innerHTML = '<div class="no-data">เกิดข้อผิดพลาดในการโหลดข้อมูล ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</div>';
-            console.error('Error:', error);
-        });
+loadData();
+setInterval(loadData,60*1000);                      // refresh ทุก 60 วิ
+document.addEventListener('visibilitychange',()=>{  // refresh ตอนเปิดแท็บกลับมา
+  if(document.visibilityState==='visible') loadData();
+});
 </script>
 </body>
 </html>
